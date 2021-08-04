@@ -1,0 +1,52 @@
+# Welcome to Serverless!
+#
+# This file is the main config file for your service.
+# It's very minimal at this point and uses default values.
+# You can always add more config options for more control.
+# We've included some commented out config examples here.
+# Just uncomment any of them to get that config option.
+#
+# For full config options, check the docs:
+#    docs.serverless.com
+#
+# Happy Coding!
+
+service: sca-risk-api
+# app and org for use with dashboard.serverless.com
+#app: your-app-name
+#org: your-org-name
+
+# You can pin your service to only deploy with a specific Serverless version
+# Check out our docs for more details
+frameworkVersion: '2'
+
+provider:
+  name: aws
+  runtime: nodejs12.x
+  lambdaHashingVersion: 20201221
+  environment:
+    TENANT: ${file(./config.${opt:stage, self:provider.stage, 'dev'}.json):tenant}
+    CLIENT_ID: ${file(./config.${opt:stage, self:provider.stage,'dev'}.json):client_id}
+    CLIENT_SECRET_JWT:  ${ssm:/sca-risk-api/okta/${self:provider.stage}/client_secret_jwt~true}
+  apiGateway:
+    apiKeys:
+      - devKey
+    usagePlan:
+      quota:
+        limit: 5000
+        offset: 2
+        period: MONTH
+      throttle:
+        burstLimit: 200
+        rateLimit: 100
+
+
+functions:
+  evaluate:
+    handler: evaluate.handler
+    events:
+      - http:
+          path: risk/evaluate
+          method: POST
+          cors: true
+          private: true
